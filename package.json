@@ -1,0 +1,40 @@
+{
+  "name": "nodejs-ex",
+  "version": "0.0.1",
+  "description": "Node.js sample app for OpenShift 3",
+  "main": "server.js",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "chai": "^3.5.0",
+    "chai-http": "^2.0.1",
+    "ejs": "^2.4.1",
+    "express": "^4.16.3",
+    "fs": "0.0.1-security",
+    "geodist": "^0.2.1",
+    "http": "0.0.0",
+    "https": "^1.0.0",
+    "mongodb": "^2.2.35",
+    "morgan": "^1.9.0",
+    "node-cron": "^1.2.1",
+    "object-assign": "^4.1.0",
+    "path": "^0.12.7",
+    "ws": "^5.2.0"
+  },
+  "engine": {
+    "node": "*",
+    "npm": "*"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/javierroca340/asociaciondetransportes.git"
+  },
+  "author": "Javier Roca javierroca340@googlemail.com",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": ""
+  },
+  "homepage": "https://github.com/javierroca340/asociaciondetransportes.git"
+}

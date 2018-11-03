@@ -1,0 +1,29 @@
+{
+  "name": "asociaciondetransportes",
+  "version": "1.0.0",
+  "description": "intranet for the association of bus services",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/javierroca340/asociaciondetransportes.git"
+  },
+  "author": "javier roca javierroca340@googlemail.com",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/javierroca340/asociaciondetransportes/issues"
+  },
+  "homepage": "https://github.com/javierroca340/asociaciondetransportes#readme",
+  "dependencies": {
+    "express": "^4.16.3",
+    "fs": "0.0.1-security",
+    "geodist": "^0.2.1",
+    "https": "^1.0.0",
+    "mongodb": "^3.1.0-beta4",
+    "morgan": "^1.9.0",
+    "node-cron": "^1.2.1",
+    "path": "^0.12.7",
+    "ws": "^5.2.0"
+  }
+}
