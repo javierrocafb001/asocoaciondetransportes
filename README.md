@@ -24,4 +24,5 @@
 # la aplicacion necesita HTTPS para poder solicitar la Ubicacion GPS de la Persona se tiene que asignar
 # un Dominio para el App ejemplo nombredelapp.com tiene que tener certificados SSL para que resuelva
 # https://nombredelapp.com
+# olvide mencionar un Punto en en archivo server.js el Servidor Node.js tambien debe cambiarse la IP y poner la IP del servidor actualmente esta 192.168.1.54 hay que buscar y remplazar aparece 2 veces en ese archivo.
 # LISTO, CON ESTOS PASOS LA APLICACION PUEDE CORRER   
