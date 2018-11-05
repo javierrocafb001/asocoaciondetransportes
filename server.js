@@ -5,13 +5,13 @@
    		cron: require('node-cron'),
 		geodist: require('geodist'),
 		path: require('path'),
-                  database: require('mongodb').MongoClient,
-	   websocketserver: require('ws').Server
+                database: require('mongodb').MongoClient,
+       	        websocketserver: require('ws').Server
 	             }  	
 
-var websocket = require('ws');
 var public = application.path.join(__dirname, '/app');
 var app = application.middleware();
+var websocket = require('ws');
 
 app.get('/', function(req, res) {
     res.sendFile(application.path.join(public, 'index.html'));
