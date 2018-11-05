@@ -1,6 +1,6 @@
 	var application = {
 		middleware: require('express'),
-	        https: require('https'),
+	        http: require('http'),
 		fs: require('fs'),
    		cron: require('node-cron'),
 		geodist: require('geodist'),
@@ -10,7 +10,7 @@
 	             }  	
 
 var websocket = require('ws');
-var public = application.path.join(__dirname, '/');
+var public = application.path.join(__dirname, '/app');
 var app = application.middleware();
 
 app.get('/', function(req, res) {
@@ -34,10 +34,7 @@ if(process.env.OPENSHIFT_MONGODB_DB_URL){
   url = process.env.OPENSHIFT_MONGODB_DB_URL + 'test';
 }
 
-const server = application.https.createServer({
-  cert: application.fs.readFileSync('./cert.pem', 'utf8'),
-  key: application.fs.readFileSync('./key.pem', 'utf8')
-}, app);
+const server = application.http.createServer(app);
 const wss = new application.websocketserver({ server });
 
 wss.on('connection', function (ws) {
@@ -1359,7 +1356,7 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 		    }
 		    }]).toArray(function(err, docs) {
                         if(ws.readyState === websocket.OPEN) {
-                        ws.send(JSON.stringify({event: 'chargedhourindicator', data: docs[0]  }));
+                        ws.send(JSON.stringify({event: 'chargedhourindicator', data: docs[0]  }));}
 			db.close();   
 			return void 0;    
 		    });
