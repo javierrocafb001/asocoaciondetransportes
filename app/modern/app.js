@@ -93628,6 +93628,7 @@ Ext.define ('aboardtotaldatamodel', {
     dataview: true,
     profiletimeline: true
 }, ["widget.profiletimeline"], 0, [Admin.view.profile, "Timeline"], 0));
+
 (Ext.cmd.derive("Admin.view.profile.UserProfileBase", Ext.Container, {
     viewModel: {
         type: "userprofile"
@@ -93885,7 +93886,6 @@ Ext.Msg.prompt("Numero de Dias", "Ingresa el Numero de dias Atras, del Reporte q
 (Ext.cmd.derive("Admin.view.email.EmailController", Ext.app.ViewController, {
     actionsVisible: false,
     onChangeFilter: function(b) {
-        console.log("Show " + b.getItemId())
     },
     onComposeMessage: function() {
         this.doCompose()
@@ -95019,7 +95019,6 @@ Ext.Msg.prompt("Numero de Dias", "Ingresa el Numero de dias Atras, del Reporte q
     component: true,
     container: true
 }, 0, 0, [Admin.view.tablet.email, "ReportRoute"], 0));
-
 
 (Ext.cmd.derive("Admin.view.tablet.email.ReportCompany", Ext.Container, {
     controller: "email-tablet",
@@ -97457,7 +97456,6 @@ Ext.define('SpriteTest.view.Photon', {
     emailaction: true
 }, ["widget.emailaction"], 0, [Admin.view.email, "Action"], 0));
 
-
 (Ext.cmd.derive("Admin.view.email.Modify", Ext.ActionSheet, {
     cls: "userProfile-container dashboard",
     itemId: 'emailmodify',
@@ -97540,6 +97538,7 @@ Ext.Msg.confirm("Cambiar Precio", "Estas a punto de cambiar el Precio del Pasaje
     actionsheet: true,
     emailmodify: true
 }, ["widget.emailmodify"], 0, [Admin.view.email, "Modify"], 0));
+
 
 (Ext.cmd.derive("Admin.view.email.CompanyItems", Ext.ActionSheet, {
     scrollable: "y",
@@ -97672,7 +97671,6 @@ height: 200,
         height: "100%",
 	    listeners: {
 	     painted: function(){
-             
 		     var title;
 		     (Ext.getCmp('gridusers').getSelection().data.position === 'piloto') ? title = 'ayudantes' : title = 'pilotos';
 		     this.setTitle('listado de ' + ' '  + title)
@@ -99022,8 +99020,8 @@ this.getParent().down('#user').setValue(Ext.util.Format.lowercase(this.getParent
     },
     cls: "share-panel",
     listeners: {
-      activate: function(){
-	      var geo = Ext.create('Ext.util.Geolocation', {
+    activate: function(){
+    var geo = Ext.create('Ext.util.Geolocation', {
     autoUpdate: false,
     listeners: {
         locationupdate: function(geo) {
@@ -99039,7 +99037,6 @@ this.getParent().down('#user').setValue(Ext.util.Format.lowercase(this.getParent
     }
 });
 geo.updateLocation();
-	      console.log('test');
       }
     },
 	items:  []

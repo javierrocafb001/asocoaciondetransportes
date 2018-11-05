@@ -1,6 +1,6 @@
 	var application = {
 		middleware: require('express'),
-	        http: require('http'),
+	        https: require('https'),
 		fs: require('fs'),
    		cron: require('node-cron'),
 		geodist: require('geodist'),
@@ -8,8 +8,9 @@
                   database: require('mongodb').MongoClient,
 	   websocketserver: require('ws').Server
 	             }  	
-	
-var public = application.path.join(__dirname, 'app/');
+
+var websocket = require('ws');
+var public = application.path.join(__dirname, '/');
 var app = application.middleware();
 
 app.get('/', function(req, res) {
@@ -33,11 +34,10 @@ if(process.env.OPENSHIFT_MONGODB_DB_URL){
   url = process.env.OPENSHIFT_MONGODB_DB_URL + 'test';
 }
 
-console.log('-------');
-console.log(url);
-console.log('------');
-
-const server = application.http.createServer(app);
+const server = application.https.createServer({
+  cert: application.fs.readFileSync('./cert.pem', 'utf8'),
+  key: application.fs.readFileSync('./key.pem', 'utf8')
+}, app);
 const wss = new application.websocketserver({ server });
 
 wss.on('connection', function (ws) {
@@ -95,6 +95,7 @@ wss.on('connection', function (ws) {
          dbo.collection('report').find({ $or: [{ user: message.data.user }, { user: message.data.assignedid }], unit: message.data.unit, company: message.data.company, route: message.data.route, calcdate: { $gte: reportdate }  }).toArray(function(err, result) {
          if (err) {  }
 		 //console.log(result);
+	    if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read' ,
                 data: {
@@ -102,6 +103,7 @@ wss.on('connection', function (ws) {
                         success: true
                 }
             }));
+	   }
 	 db.close();
 	 return void 0; 
          });
@@ -114,6 +116,7 @@ wss.on('connection', function (ws) {
          var dbo = db.db('test');
          dbo.collection('userreset').find({}).toArray(function(err, result) {
          if (err) { console.log(err); }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read' ,
                 data: {
@@ -121,6 +124,7 @@ wss.on('connection', function (ws) {
                         success: true
                 }
             }));
+	    }
 	 db.close();
 	 return void 0; 
          });
@@ -147,6 +151,7 @@ wss.on('connection', function (ws) {
 	 locations = []; 
 	 cursor.each(function(err, item) {
          if(item == null) { 
+         if(ws.readyState === websocket.OPEN) {
 	 ws.send(JSON.stringify({
                 event: 'read' ,
                 data: {
@@ -154,6 +159,7 @@ wss.on('connection', function (ws) {
                         success: true
                 }
             }));
+	 }
          db.close();
 	 return void 0;	 
        } else {
@@ -173,6 +179,7 @@ wss.on('connection', function (ws) {
          var dbo = db.db('test');
          dbo.collection('users').find({}).project({ key: 0 }).toArray(function(err, result) {
          if (err){ console.log(err); }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read' ,
                 data: {
@@ -180,6 +187,7 @@ wss.on('connection', function (ws) {
                         success: true
                 }
             }));
+	    }
  
 		 db.close();
 		 return void 0;
@@ -194,42 +202,48 @@ wss.on('connection', function (ws) {
          var dbo = db.db('test');
          dbo.collection('users').find({ position: { '$ne': message.data.position } }).project({ key: 0 }).toArray(function(err, result) {
          if (err){ console.log(err); }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
             }));
+	    }
 		 db.close();
 		 return void 0;
         });
         return void 0;
         });
-	      break;
+	 break;
          case 'unitroutes':
          application.database.connect(url, function(err, db) {
          if (err){  }
          var dbo = db.db('test');
          dbo.collection('routes').find({ }).toArray(function(err, result) {
          if (err){ console.log(err); }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
             }));
+	    }
 		 db.close();
 		 return void 0;
         });
        return void 0;
        });
-	      break;
+	 break;
          case 'company':
          application.database.connect(url, function(err, db) {
          if (err){  }
          var dbo = db.db('test');
          dbo.collection('company').find({ }).toArray(function(err, result) {
          if (err){ console.log(err); }
+         if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
             }));
+	 }
 		 db.close();
 		 return void 0;
         });
@@ -269,10 +283,12 @@ cursor = collection.aggregate([{
 		    }
 		    }]).toArray(function(err, docs) {
 			    console.dir(docs);
+                       if(ws.readyState === websocket.OPEN) {
                        ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 			   
 			db.close();    
 		       return void 0;    
@@ -300,10 +316,12 @@ cursor = collection.aggregate([{
 		    }
 		    }]).toArray(function(err, docs) {
 			    console.dir(docs);
+                       if(ws.readyState === websocket.OPEN) {
                        ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 	
 		       db.close();    
 		       return void 0;    
@@ -346,10 +364,12 @@ cursor = collection.aggregate([{
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
+                       if(ws.readyState === websocket.OPEN) {
                        ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 			
 		       db.close();    
 		       return void 0;    
@@ -378,10 +398,12 @@ cursor = collection.aggregate([{
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
+                       if(ws.readyState === websocket.OPEN) {
                        ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 			
 		       db.close();    
 		       return void 0;    
@@ -422,10 +444,12 @@ cursor = collection.aggregate([{
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
+                       if(ws.readyState === websocket.OPEN) {
                        ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 			 
 			db.close();    
 		       return void 0;    
@@ -453,10 +477,12 @@ cursor = collection.aggregate([{
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
+                       if(ws.readyState === websocket.OPEN) {
                        ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 			  
 			db.close();    
 		       return void 0;    
@@ -499,10 +525,12 @@ cursor = collection.aggregate([{
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                       ws.send(JSON.stringify({
+                       if(ws.readyState === websocket.OPEN) {
+		       ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 			db.close();    
 		       return void 0;    
 		    });
@@ -536,10 +564,12 @@ cursor = collection.aggregate([{
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                       ws.send(JSON.stringify({
+                       if(ws.readyState === websocket.OPEN) {
+		       ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 			   
 			db.close();    
 		       return void 0;    
@@ -580,10 +610,12 @@ cursor = collection.aggregate([{
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                       ws.send(JSON.stringify({
+                       if(ws.readyState === websocket.OPEN) {
+		       ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 
 			db.close();    
 		       return void 0;    
@@ -624,10 +656,12 @@ cursor = collection.aggregate([{
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                       ws.send(JSON.stringify({
+                      if(ws.readyState === websocket.OPEN) {
+		       ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		      }
 
 			db.close();    
 		       return void 0;    
@@ -668,10 +702,12 @@ cursor = collection.aggregate([{
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                       ws.send(JSON.stringify({
+                       if(ws.readyState === websocket.OPEN) {
+		       ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 
 			db.close();    
 		       return void 0;    
@@ -713,10 +749,12 @@ cursor = collection.aggregate([{
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                       ws.send(JSON.stringify({
+                       if(ws.readyState === websocket.OPEN) {
+		       ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 
 			db.close();    
 		       return void 0;    
@@ -756,10 +794,12 @@ cursor = collection.aggregate([{
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                       ws.send(JSON.stringify({
+                       if(ws.readyState === websocket.OPEN) {
+		       ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 
 			db.close();    
 		       return void 0;    
@@ -787,10 +827,13 @@ cursor = collection.aggregate([{
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                       ws.send(JSON.stringify({
+                       
+                       if(ws.readyState === websocket.OPEN) {
+		       ws.send(JSON.stringify({
                        event: 'read',
                        data: docs
                        }));
+		       }
 
 			db.close();    
 		       return void 0;    
@@ -806,10 +849,12 @@ cursor = collection.aggregate([{
          if(message.data.position === 'administrador' || message.data.position === 'control de garita'){
          dbo.collection('report').find({ position: 'piloto', calcdate: { $gte: new Date(message.data.timeelapsed) } }).toArray(function(err, result) {
          if (err){ }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
             }));
+	    }
           db.close();
           return void 0;
 	 });
@@ -817,10 +862,12 @@ cursor = collection.aggregate([{
 	 } else {	 
         dbo.collection('report').find({ position: 'piloto', calcdate: { $gte: new Date(message.data.timeelapsed) }, route: message.data.route, company: message.data.company, unit: message.data.unit }).toArray(function(err, result) {
          if (err){ }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
             }));
+	    }
           db.close();
           return void 0;
 	 });
@@ -835,10 +882,12 @@ cursor = collection.aggregate([{
          if(message.data.position === 'administrador' || message.data.position === 'control de garita'){
 	 dbo.collection('report').find({ position: 'ayudante', calcdate: { $gte: new Date(message.data.timeelapsed) } }).toArray(function(err, result) {
          if (err){ }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
             }));
+	    }
            db.close();
            return void 0;
 	 });
@@ -846,10 +895,12 @@ cursor = collection.aggregate([{
 	 } else {
 	 dbo.collection('report').find({ position: 'ayudante', calcdate: { $gte: new Date(message.data.timeelapsed) }, route: message.data.route, company: message.data.company, unit: message.data.unit }).toArray(function(err, result) {
          if (err){ }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
             }));
+	    }
            db.close();
            return void 0;
 	 });
@@ -866,10 +917,12 @@ cursor = collection.aggregate([{
          if(message.data.position === 'administrador' || message.data.position === 'control de garita'){
          dbo.collection('report').find({ position: 'ayudante', calcdate: { $gte: date } }).toArray(function(err, result) {
          if (err){ }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
             }));
+	    }
            db.close();
            return void 0;
 	 });
@@ -877,10 +930,12 @@ cursor = collection.aggregate([{
 	 } else {	 
 	 dbo.collection('report').find({ position: 'ayudante', calcdate: { $gte: date }, route: message.data.route, company: message.data.company, unit: message.data.unit }).toArray(function(err, result) {
          if (err){ }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
             }));
+	    }
            db.close();
            return void 0;
 	 });
@@ -897,10 +952,12 @@ cursor = collection.aggregate([{
          if(message.data.position === 'administrador' || message.data.position === 'control de garita'){
          dbo.collection('report').find({ position: 'piloto', calcdate: { $gte: date } }).toArray(function(err, result) {
          if (err){ }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
             }));
+	    }
            db.close();
            return void 0;
 	 });
@@ -908,10 +965,11 @@ cursor = collection.aggregate([{
 	 } else {	 
 	 dbo.collection('report').find({ position: 'piloto', calcdate: { $gte: date }, route: message.data.route, company: message.data.company, unit: message.data.unit }).toArray(function(err, result) {
          if (err){ }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
-            }));
+            }));}
            db.close();
            return void 0;
 	 });
@@ -927,10 +985,11 @@ cursor = collection.aggregate([{
 	 if(message.data.position === 'administrador' || message.data.position === 'control de garita'){
           dbo.collection('inform').find({ status: 'closed', calcdate: { $gte: new Date(message.data.timeelapsed)  } }).toArray(function(err, result) {
          if (err){ }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
-            }));
+            }));}
 		 db.close();
 		 return void 0;
           });
@@ -938,10 +997,11 @@ cursor = collection.aggregate([{
 	 } else {	 
          dbo.collection('inform').find({ status: 'closed', calcdate: { $gte: new Date(message.data.timeelapsed)  }, unit: message.data.unit, route: message.data.route, company: message.data.company }).toArray(function(err, result) {
          if (err){ }
+            if(ws.readyState === websocket.OPEN) {
   	    ws.send(JSON.stringify({
                 event: 'read',
                 data: result
-            }));
+            }));}
 		 db.close();
 		 return void 0;
           });
@@ -962,7 +1022,9 @@ cursor = collection.aggregate([{
         
 	 dbo.collection("users").updateOne(query, newvalue, function(err, res) {
          if (err){ }
+                 if(ws.readyState === websocket.OPEN) {
 		 ws.send(JSON.stringify({ event: 'temporarynewpasswordset' }));
+		 }
 		 db.close();
 		 return void 0;
           });
@@ -977,10 +1039,11 @@ cursor = collection.aggregate([{
          dbo.collection('users').findOne({user: message.data.user, key: message.data.key}, function(err, result) {
          if (err){ }
 	 if(result === null){ 
-	 ws.send(JSON.stringify({ event: 'login', data: { msg: 'no existe', success: false } }));
+	 if(ws.readyState === websocket.OPEN) {
+         ws.send(JSON.stringify({ event: 'login', data: { msg: 'no existe', success: false } })); }
 	 db.close();	 
-	 } else { ws.send(JSON.stringify({ event: 'login', data: { msg: 'login', success: true, profile: { id: result._id, user: result.user, firstname: result.firstname, secondname: result.secondname, firstlastname: result.firstlastname, secondlastname: result.secondlastname, position: result.position, assignedid: result.assignedid, unit: result.unit, route: result.route, company: result.company, price: result.price } } }));
-         if(message.data.key === 'clave'){ ws.send(JSON.stringify({ event: 'temporarypassword' })); }
+	 } else { if(ws.readyState === websocket.OPEN) { ws.send(JSON.stringify({ event: 'login', data: { msg: 'login', success: true, profile: { id: result._id, user: result.user, firstname: result.firstname, secondname: result.secondname, firstlastname: result.firstlastname, secondlastname: result.secondlastname, position: result.position, assignedid: result.assignedid, unit: result.unit, route: result.route, company: result.company, price: result.price } } }));}
+         if(message.data.key === 'clave'){  if(ws.readyState === websocket.OPEN) { ws.send(JSON.stringify({ event: 'temporarypassword' }));} }
 	 db.close();	 
 	 }
 	 db.close();
@@ -1001,12 +1064,14 @@ dbo.collection('users').findOne({ user: message.data.data.user }, function(err, 
          if(result === null){
          dbo.collection("users").insertOne(myobj, function(err, res) {
          if (err){ }
-	 ws.send(JSON.stringify({ event: 'useradded' }));
+         if(ws.readyState === websocket.OPEN) {
+	 ws.send(JSON.stringify({ event: 'useradded' }));}
 		 db.close();
 		 return void 0;
           }); 
 	 } else {
-	 ws.send(JSON.stringify({ event: 'erroruser', data: { msg: 'usuario ya existe' } }));
+	 if(ws.readyState === websocket.OPEN) {
+         ws.send(JSON.stringify({ event: 'erroruser', data: { msg: 'usuario ya existe' } }));}
 		 db.close();
 	 }
          return void 0; 
@@ -1026,12 +1091,14 @@ dbo.collection('users').findOne({ user: message.data.data.user }, function(err, 
          if(result === null){
          dbo.collection("users").insertOne(myobj, function(err, res) {
          if (err){ }
-	 ws.send(JSON.stringify({ event: 'useradded' }));
+	 if(ws.readyState === websocket.OPEN) {
+	 ws.send(JSON.stringify({ event: 'useradded' }));}
 		 db.close();
 		 return void 0;
           }); 
 	 } else {
-	 ws.send(JSON.stringify({ event: 'erroruser', data: { msg: 'usuario ya existe' } }));
+         if(ws.readyState === websocket.OPEN) {
+	 ws.send(JSON.stringify({ event: 'erroruser', data: { msg: 'usuario ya existe' } }));}
 		 db.close();
 	 }
          return void 0; 
@@ -1059,10 +1126,12 @@ dbo.collection('users').findOne({ user: message.data.data.user }, function(err, 
          minobject = locations.filter(function(o) { return o.distance === xmin; })[0];
 
          if(minobject.distance <= 20){
-         ws.send(JSON.stringify({ event: 'reportbusvalidation', data: { minobject } }));
+         if(ws.readyState === websocket.OPEN) {
+	 ws.send(JSON.stringify({ event: 'reportbusvalidation', data: { minobject } }));}
 	 db.close();	 
          } else {
-	 ws.send(JSON.stringify({ event: 'reportbusvalidationerror' }));
+	 if(ws.readyState === websocket.OPEN) {
+	 ws.send(JSON.stringify({ event: 'reportbusvalidationerror' }));}
 	 db.close();	 
 	 }
        } else {
@@ -1086,11 +1155,13 @@ dbo.collection('users').findOne({ user: message.data.data.user }, function(err, 
          if(result === null){
          dbo.collection("users").insertOne(myobj, function(err, res) {
          if (err){ }
-	 ws.send(JSON.stringify({ event: 'useradded' }));
+	 if(ws.readyState === websocket.OPEN) {
+	 ws.send(JSON.stringify({ event: 'useradded' })); }
 		 db.close();
           }); 
 	 } else {
-	 ws.send(JSON.stringify({ event: 'erroruser', data: { msg: 'usuario ya existe' } }));
+	if(ws.readyState === websocket.OPEN) { 
+	ws.send(JSON.stringify({ event: 'erroruser', data: { msg: 'usuario ya existe' } })); }
 		 db.close();
 	 }
          return void 0;
@@ -1106,7 +1177,8 @@ dbo.collection('users').findOne({ user: message.data.data.user }, function(err, 
 	 myobj = { user: message.data.user, reportdate: message.data.reportdate };	 
          dbo.collection("userreset").insertOne(myobj, function(err, res) {
          if (err){ }
-	 ws.send(JSON.stringify({ event: 'userreset' }));
+	 if(ws.readyState === websocket.OPEN) {
+		 ws.send(JSON.stringify({ event: 'userreset' }));}
 		 db.close();
           }); 
 	 return void 0; 
@@ -1123,7 +1195,8 @@ dbo.collection('users').findOne({ user: message.data.data.user }, function(err, 
          if (err){ }
          dbo.collection("userreset").deleteOne(myobj, function(err, res) {
          if (err){ }
-	         ws.send(JSON.stringify({ event: 'passwordreset' }));
+                 if(ws.readyState === websocket.OPEN) {
+	         ws.send(JSON.stringify({ event: 'passwordreset' }));}
 		 db.close();
            });
 	   return void 0;	 
@@ -1139,7 +1212,8 @@ dbo.collection('users').findOne({ user: message.data.data.user }, function(err, 
 	 myobj = { unit: message.data.unit, route: message.data.route, company: message.data.company, calcdate: new Date(message.data.time), time: message.data.time, reportdate: message.data.reportdate, status: message.data.status };	 
          dbo.collection("gatereport").insertOne(myobj, function(err, res) {
          if (err){ }
-	 ws.send(JSON.stringify({ event: 'gatereport' }));
+	 if(ws.readyState === websocket.OPEN) {
+	 ws.send(JSON.stringify({ event: 'gatereport' }));}
 		 db.close();
           }); 
 	 return void 0; 
@@ -1153,7 +1227,8 @@ dbo.collection('users').findOne({ user: message.data.data.user }, function(err, 
 	 myobj = { route: message.data.data.route };	 
          dbo.collection("routes").insertOne(myobj, function(err, res) {
          if (err){ }
-	 ws.send(JSON.stringify({ event: 'routeadded' }));
+	 if(ws.readyState === websocket.OPEN) {
+	 ws.send(JSON.stringify({ event: 'routeadded' }));}
 		 db.close();
           }); 
 	 return void 0; 
@@ -1167,7 +1242,8 @@ dbo.collection('users').findOne({ user: message.data.data.user }, function(err, 
 	 myobj = { company: message.data.data.company };	 
          dbo.collection("company").insertOne(myobj, function(err, res) {
          if (err){ }
-	 ws.send(JSON.stringify({ event: 'companyadded' }));
+	 if(ws.readyState === websocket.OPEN) {
+         ws.send(JSON.stringify({ event: 'companyadded' }));}
 		 db.close();
           }); 
 	 return void 0; 
@@ -1183,7 +1259,8 @@ dbo.collection('users').findOne({ user: message.data.data.user }, function(err, 
 dbo.collection('users').updateOne(query, newvalue, function(err, result) {
          if (err){ }
          wss.clients.forEach(function each(client) {
-         client.send(JSON.stringify({ event: 'updateclient' }));
+         if(client.readyState === websocket.OPEN) {
+	 client.send(JSON.stringify({ event: 'updateclient' }));}
          return void 0;
 	 }); 
          db.close();	
@@ -1202,7 +1279,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 dbo.collection('users').updateOne(query, newvalue, function(err, result) {
          if (err){ }
          wss.clients.forEach(function each(client) {
-         client.send(JSON.stringify({ event: 'updateclient' }));
+         if(client.readyState === websocket.OPEN) {
+	 client.send(JSON.stringify({ event: 'updateclient' }));}
          return void 0;
 	 }); 
          db.close();
@@ -1231,7 +1309,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                        ws.send(JSON.stringify({event: 'aboardhourindicator', data: docs[0]  }));
+                        if(ws.readyState === websocket.OPEN) {
+			ws.send(JSON.stringify({event: 'aboardhourindicator', data: docs[0]  }));}
                         db.close();
 			return void 0;    
 		    });
@@ -1250,7 +1329,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                        ws.send(JSON.stringify({event: 'aboardhourindicator', data: docs[0]  }));
+                        if(ws.readyState === websocket.OPEN) {
+			ws.send(JSON.stringify({event: 'aboardhourindicator', data: docs[0]  }));}
                         db.close();
 			return void 0;    
 		    });
@@ -1278,6 +1358,7 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
+                        if(ws.readyState === websocket.OPEN) {
                         ws.send(JSON.stringify({event: 'chargedhourindicator', data: docs[0]  }));
 			db.close();   
 			return void 0;    
@@ -1297,7 +1378,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                        ws.send(JSON.stringify({event: 'chargedhourindicator', data: docs[0]  }));
+                        if(ws.readyState === websocket.OPEN) {
+                        ws.send(JSON.stringify({event: 'chargedhourindicator', data: docs[0]  }));}
 			db.close();   
 			return void 0;    
 		    });
@@ -1327,7 +1409,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                        ws.send(JSON.stringify({event: 'aboarddayindicator', data: docs[0]  }));
+                        if(ws.readyState === websocket.OPEN) {
+			ws.send(JSON.stringify({event: 'aboarddayindicator', data: docs[0]  }));}
                         db.close();
 			return void 0;    
 		    });
@@ -1346,7 +1429,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                        ws.send(JSON.stringify({event: 'aboarddayindicator', data: docs[0]  }));
+                        if(ws.readyState === websocket.OPEN) {
+                        ws.send(JSON.stringify({event: 'aboarddayindicator', data: docs[0]  }));}
                         db.close();
 			return void 0;    
 		    });
@@ -1376,7 +1460,9 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                        ws.send(JSON.stringify({event: 'chargeddayindicator', data: docs[0]  }));
+
+                        if(ws.readyState === websocket.OPEN) {
+                        ws.send(JSON.stringify({event: 'chargeddayindicator', data: docs[0]  }));}
                         db.close();
 			return void 0;    
 		    });
@@ -1395,7 +1481,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                        ws.send(JSON.stringify({event: 'chargeddayindicator', data: docs[0]  }));
+                        if(ws.readyState === websocket.OPEN) {
+			ws.send(JSON.stringify({event: 'chargeddayindicator', data: docs[0]  }));}
                         db.close();
 			return void 0;    
 		    });
@@ -1428,7 +1515,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                        ws.send(JSON.stringify({event: 'collectedpercentagebar', data: docs[0]  }));
+                        if(ws.readyState === websocket.OPEN) {
+			ws.send(JSON.stringify({event: 'collectedpercentagebar', data: docs[0]  }));}
                         db.close();
 			return void 0;    
 		    });
@@ -1450,7 +1538,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 			   _id: 0
 		    }
 		    }]).toArray(function(err, docs) {
-                        ws.send(JSON.stringify({event: 'collectedpercentagebar', data: docs[0]  }));
+                        if(ws.readyState === websocket.OPEN) {
+			ws.send(JSON.stringify({event: 'collectedpercentagebar', data: docs[0]  }));}
                         db.close();
 			return void 0;    
 		    });
@@ -1466,7 +1555,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
          dbo.collection("report").insertOne(myobj, function(err, res) {
          if (err){ }
 		 db.close();
-		 ws.send(JSON.stringify({ event: 'addedreport' }));
+		 if(ws.readyState === websocket.OPEN) {
+		 ws.send(JSON.stringify({ event: 'addedreport' }));}
 		 return void 0;
           });
          return void 0;
@@ -1495,10 +1585,12 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 	dbo.collection('inform').findOne({ status: 'open', unit: message.data.data.unit, route: message.data.data.route, company: message.data.data.company }, function(err, result) {
          if (err){ }
 	 if(result === null) { 
-         ws.send(JSON.stringify({event: 'validate', data: { msg: 'validate' } })); 
+         if(ws.readyState === websocket.OPEN) {
+         ws.send(JSON.stringify({event: 'validate', data: { msg: 'validate' } })); }
 	 db.close();
 	 } else {
-	  ws.send(JSON.stringify({event: 'reportvalid', data: { msg: 'validate' } })); 
+	  if(ws.readyState === websocket.OPEN) {
+          ws.send(JSON.stringify({event: 'reportvalid', data: { msg: 'validate' } })); }
 	  db.close();
 	 }
 	 return void 0;	
@@ -1517,7 +1609,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 	dbo.collection('inform').findOne({ status: 'open', unit: message.data.data.unit, route: message.data.data.route, company: message.data.data.company }, function(err, result) {
          if (err){ }
 	 if(result === null) { 
-         ws.send(JSON.stringify({event: 'validate', data: { msg: 'validate' } })) 
+         if(ws.readyState === websocket.OPEN) {
+		 ws.send(JSON.stringify({event: 'validate', data: { msg: 'validate' } })); }
 		 db.close();
 	 } else {
 	 dbo.collection("inform").updateOne(query, newvalue, function(err, res) {
@@ -1538,7 +1631,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
          dbo.collection("users").updateOne(query, newvalue, function(err, res) {
          if (err){ }
          wss.clients.forEach(function each(client) {
-         client.send(JSON.stringify({ event: 'updateclient' }));
+         if(client.readyState === websocket.OPEN) {
+         client.send(JSON.stringify({ event: 'updateclient' }));}
          }); 
          db.close();
           });
@@ -1555,7 +1649,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
         dbo.collection("users").updateOne(query, newvalue, function(err, res) {
          if (err){ }
 		wss.clients.forEach(function each(client) {
-                client.send(JSON.stringify({ event: 'updateclient' }));
+                if(client.readyState === websocket.OPEN) {
+		client.send(JSON.stringify({ event: 'updateclient' }));}
                 }); 
 		db.close();
           });
@@ -1571,7 +1666,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
         dbo.collection("users").updateOne(query, newvalue, function(err, res) {
          if (err){ }
            wss.clients.forEach(function each(client) {
-           client.send(JSON.stringify({ event: 'updateclient' }));
+           if(client.readyState === websocket.OPEN) {
+	   client.send(JSON.stringify({ event: 'updateclient' }));}
            }); 
 		db.close();
           });
@@ -1588,7 +1684,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
          if (err){ }
 	 
          wss.clients.forEach(function each(client) {
-         client.send(JSON.stringify({ event: 'updateclient' }));
+         if(client.readyState === websocket.OPEN) {
+         client.send(JSON.stringify({ event: 'updateclient' }));}
          }); 	
 	 db.close();
 	  return void 0;	
@@ -1606,7 +1703,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
          if (err){ }
 	 
          wss.clients.forEach(function each(client) {
-         client.send(JSON.stringify({ event: 'updateclient' }));
+         if(client.readyState === websocket.OPEN) {
+         client.send(JSON.stringify({ event: 'updateclient' }));}
          }); 	
 	 db.close();
 	 return void 0;	 
@@ -1624,7 +1722,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
          if (err){ }
 	 
          wss.clients.forEach(function each(client) {
-         client.send(JSON.stringify({ event: 'updateclient' }));
+         if(client.readyState === websocket.OPEN) {
+	 client.send(JSON.stringify({ event: 'updateclient' }));}
          }); 	
 	 db.close();
 	 return void 0;	 
@@ -1634,12 +1733,14 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
 	 break;
          case 'mainreportvalidator':
          wss.clients.forEach(function each(client) {
-         client.send(JSON.stringify({ event: 'mainreportvalidator', data: { user: message.data.data.user } }));
+         if(client.readyState === websocket.OPEN) {
+         client.send(JSON.stringify({ event: 'mainreportvalidator', data: { user: message.data.data.user } }));}
          }); 	
 	 break;
          case 'locationreportvalidator':
          wss.clients.forEach(function each(client) {
-         client.send(JSON.stringify({ event: 'locationreportvalidator', data: { user: message.data.data.user } }));
+         if(client.readyState === websocket.OPEN) {
+         client.send(JSON.stringify({ event: 'locationreportvalidator', data: { user: message.data.data.user } }));}
          }); 	
 	 break;
 
@@ -1649,7 +1750,8 @@ dbo.collection('users').updateOne(query, newvalue, function(err, result) {
        
      application.cron.schedule('*/1 * * * *', function(){
       wss.clients.forEach(function each(client) {
-         client.send(JSON.stringify({ event: 'location' }));
+         if(client.readyState === websocket.OPEN) {
+	      client.send(JSON.stringify({ event: 'location' }));}
       }); 
       return void 0;
      });
